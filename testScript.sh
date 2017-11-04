@@ -71,9 +71,10 @@ echo "auth      optional            pam_tally.so deny=5 unlock_time=900 onerr=fa
 
 echo "changing all the passwords to complex"
 # must have user_list.txt
-for i in `more user_list.txt ` 
+for i in `more user_list.txt `
     do
-    echo -e “C0mpl3xPassw0rd\nC0mpl3xPassw0rd” | passwd $i
+    echo $i
+    echo “C0mpl3xPassw0rd” | passwd –-stdin $i
     
 done
 echo "*Command complete*"
@@ -336,10 +337,6 @@ sudo apt-get dist-upgrade
 echo "Installing cracklib"
 sudo apt-get install libpam-cracklib --force-yes -y
 
-echo "setting passwd requisites"
-sudo perl -pi -e 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS   90/g' /etc/login.defs
-sudo perl -pi -e 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS   10/g' /etc/login.defs
-sudo perl -pi -e 's/^PASS_WARN_AGE.*/PASS_WARN_AGE   7/g' /etc/login.defs
 
 echo "password      requisite           pam_cracklib.so retry=3 minlen=8 difok=3 reject_username minclass=3 maxrepeat=2 dcredit=1 ucredit=1 lcredit=1 ocredit=1" >> /etc/pam.d/common-password
 echo "password      requisite           pam_history.so use_authtok remember=25 enforce_for_root" >> /etc/pam.d/common-password
