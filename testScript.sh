@@ -4,16 +4,16 @@
 # Using this script can result in penalties, so please only use for ideas or inspiration for making your own script.
 
 echo "deleting all unneeded files"
-find /home -name '*.mp3' -type f -delete
-find /home -name '*.mov' -type f -delete
-find /home -name '*.mp4' -type f -delete
-find /home -name '*.avi' -type f -delete
-find /home -name '*.mpg' -type f -delete
-find /home -name '*.mpeg' -type f -delete
-find /home -name '*.flac' -type f -delete
-find /home -name '*.m4a' -type f -delete
-find /home -name '*.flv' -type f -delete
-find /home -name '*.ogg' -type f -delete
+find / -name '*.mp3' -type f -delete
+find / -name '*.mov' -type f -delete
+find / -name '*.mp4' -type f -delete
+find / -name '*.avi' -type f -delete
+find / -name '*.mpg' -type f -delete
+find / -name '*.mpeg' -type f -delete
+find / -name '*.flac' -type f -delete
+find / -name '*.m4a' -type f -delete
+find / -name '*.flv' -type f -delete
+find / -name '*.ogg' -type f -delete
 find /home -name '*.gif' -type f -delete
 find /home -name '*.png' -type f -delete
 find /home -name '*.jpg' -type f -delete
@@ -35,13 +35,13 @@ sudo apt-get dist-upgrade
 echo "enabling firewall"
 sudo apt-get install ufw
 sudo ufw enable
-sudo ufw reset
-sudo ufw enable
-sudo ufw incoming
-sudo ufw outgoing
 sudo ufw allow out 53
 sudo ufw allow out 80
 sudo ufw allow out 443
+ufw deny 23
+ufw deny 2049
+ufw deny 515
+ufw deny 111
 echo "done"
 
 # lock out root user
@@ -50,10 +50,6 @@ sudo passwd -l root
 
 # no guest account
 echo "allow-guest=false" >> /etc/lightdm/lightdm.conf
-
-echo "*Resetting bash history*"
-sudo rm ~/.bash_history 
-
 
 
 echo "Installing cracklib"
@@ -152,7 +148,18 @@ iptables -t nat -F
     ip6tables -P INPUT DROP
     ip6tables -P FORWARD DROP
     ip6tables -P OUTPUT DROP
-
+    
+    
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 23 -j DROP         #Block Telnet
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 2049 -j DROP       #Block NFS
+    iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 2049 -j DROP       #Block NFS
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 6000:6009 -j DROP  #Block X-Windows
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 7100 -j DROP       #Block X-Windows font server
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 515 -j DROP        #Block printer port
+    iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 515 -j DROP        #Block printer port
+    iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 111 -j DROP        #Block Sun rpc/NFS
+    iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 111 -j DROP        #Block Sun rpc/NFS
+    iptables -A INPUT -p all -s localhost -i eth0 -j DROP #Deny outside packets from internet which claim to be from your loopback interface.
     iptables -A INPUT -s 127.0.0.0/8 -i firefox -j DROP
     iptables -A INPUT -s 0.0.0.0/8 -j DROP
     iptables -A INPUT -s 100.64.0.0/10 -j DROP
@@ -256,16 +263,3 @@ echo "virus scan"
     cd /usr/share/lynis/
     /usr/share/lynis/lynis update info
     /usr/share/lynis/lynis audit system
-
-    #ClamAV
-   # systemctl stop clamav-freshclam
-   # freshclam --stdout
-   # systemctl start clamav-freshclam
-   # clamscan -r -i --stdout --exclude-dir="^/sys" /
-
-
-
-
-
-
-
