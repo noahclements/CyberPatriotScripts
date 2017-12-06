@@ -70,7 +70,7 @@ echo "changing all the passwords to complex"
  pam-auth-update --force 
 for i in `more user_list.txt ` 
     do
-    echo -e “C0mpl3xPassw0rd\nC0mpl3xPassw0rd” | passwd $i
+    echo $i:C0mpl3xPassw0rd | sudo chpasswd
     
 done
 echo "*Command complete*"
