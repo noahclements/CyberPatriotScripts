@@ -35,8 +35,13 @@ sudo apt-get dist-upgrade
 echo "enabling firewall"
 sudo apt-get install ufw
 sudo ufw enable
-sudo ufw allow out 53
-sudo ufw allow out 80
+
+for((x=1; x<=299; x++))
+do
+	sudo ufw allow out $x
+	echo "port $x"
+done
+
 sudo ufw allow out 443
 ufw deny 23
 ufw deny 2049
@@ -68,10 +73,9 @@ echo "auth      optional            pam_tally.so deny=5 unlock_time=900 onerr=fa
 echo "changing all the passwords to complex"
 # must have user_list.txt
  pam-auth-update --force 
-for i in `more user_list.txt ` 
+for i in $(cat user_list.txt)
     do
-    echo $i:C0mpl3xPassw0rd | sudo chpasswd
-    
+    echo -e ``C0mpl3xPassw0rd\nC0mpl3xPassw0rd`` | passwd $i
 done
 echo "*Command complete*"
 
@@ -106,7 +110,7 @@ sudo service ssh restart
 
 echo "FTP"
 sudo apt-get -y install vsftpd
-  sudo sed -i '/^anon_upload_enable/ c\anon_upload_enable no' /etc/vsftpd.conf
+  sudo sed -i '/^anon_upload_enable/ c\anon_upload_enable=NO' /etc/vsftpd.conf
   sudo sed -i '/^anonymous_enable/ c\anonymous_enable=NO' /etc/vsftpd.conf
   sudo sed -i '/^chroot_local_user/ c\chroot_local_user=YES' /etc/vsftpd.conf
 sudo service vsftpd restart
@@ -149,7 +153,6 @@ iptables -t nat -F
     ip6tables -P FORWARD DROP
     ip6tables -P OUTPUT DROP
     
-    
     iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 23 -j DROP         #Block Telnet
     iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 2049 -j DROP       #Block NFS
     iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 2049 -j DROP       #Block NFS
@@ -159,7 +162,7 @@ iptables -t nat -F
     iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 515 -j DROP        #Block printer port
     iptables -A INPUT -p tcp -s 0/0 -d 0/0 --dport 111 -j DROP        #Block Sun rpc/NFS
     iptables -A INPUT -p udp -s 0/0 -d 0/0 --dport 111 -j DROP        #Block Sun rpc/NFS
-    iptables -A INPUT -p all -s localhost -i eth0 -j DROP #Deny outside packets from internet which claim to be from your loopback interface.
+    iptables -A INPUT -p all -s localhost -i eth0 -j DROP 
     iptables -A INPUT -s 127.0.0.0/8 -i firefox -j DROP
     iptables -A INPUT -s 0.0.0.0/8 -j DROP
     iptables -A INPUT -s 100.64.0.0/10 -j DROP
@@ -170,7 +173,6 @@ iptables -t nat -F
     iptables -A INPUT -s 198.51.100.0/24 -j DROP
     iptables -A INPUT -s 203.0.113.0/24 -j DROP
     iptables -A INPUT -s 224.0.0.0/3 -j DROP
-    #Blocks bogons from leaving the computer
     iptables -A OUTPUT -d 127.0.0.0/8 -o $interface -j DROP
     iptables -A OUTPUT -d 0.0.0.0/8 -j DROP
     iptables -A OUTPUT -d 100.64.0.0/10 -j DROP
@@ -181,7 +183,6 @@ iptables -t nat -F
     iptables -A OUTPUT -d 198.51.100.0/24 -j DROP
     iptables -A OUTPUT -d 203.0.113.0/24 -j DROP
     iptables -A OUTPUT -d 224.0.0.0/3 -j DROP
-    #Blocks outbound from source bogons - A bit overkill
     iptables -A OUTPUT -s 127.0.0.0/8 -o $interface -j DROP
     iptables -A OUTPUT -s 0.0.0.0/8 -j DROP
     iptables -A OUTPUT -s 100.64.0.0/10 -j DROP
@@ -192,7 +193,6 @@ iptables -t nat -F
     iptables -A OUTPUT -s 198.51.100.0/24 -j DROP
     iptables -A OUTPUT -s 203.0.113.0/24 -j DROP
     iptables -A OUTPUT -s 224.0.0.0/3 -j DROP
-    #Block receiving bogons intended for bogons - Super overkill
     iptables -A INPUT -d 127.0.0.0/8 -i $interface -j DROP
     iptables -A INPUT -d 0.0.0.0/8 -j DROP
     iptables -A INPUT -d 100.64.0.0/10 -j DROP
@@ -204,16 +204,13 @@ iptables -t nat -F
     iptables -A INPUT -d 203.0.113.0/24 -j DROP
     iptables -A INPUT -d 224.0.0.0/3 -j DROP
     iptables -A INPUT -i lo -j ACCEPT
-    #Least Strict Rules
     iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-    #Strict Rules -- Only allow well known ports (1-1022)
     iptables -A INPUT -p tcp --match multiport --sports 1:1022 -m conntrack --ctstate ESTABLISHED -j ACCEPT
     iptables -A INPUT -p udp --match multiport --sports 1:1022 -m conntrack --ctstate ESTABLISHED -j ACCEPT
     iptables -A OUTPUT -p tcp --match multiport --dports 1:1022 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
     iptables -A OUTPUT -p udp --match multiport --dports 1:1022 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -P OUTPUT DROP
-    #Very Strict Rules - Only allow HTTP/HTTPS, NTP and DNS
     iptables -A INPUT -p tcp --sport 80 -m conntrack --ctstate ESTABLISHED -j ACCEPT
     iptables -A INPUT -p tcp --sport 443 -m conntrack --ctstate ESTABLISHED -j ACCEPT
     iptables -A INPUT -p tcp --sport 53 -m conntrack --ctstate ESTABLISHED -j ACCEPT
@@ -241,6 +238,20 @@ sysctl -w net.ipv4.tcp_syncookies=1
     sysctl -w net.ipv4.conf.default.secure_redirects=0
 sysctl -p
 
+chown -R root:root /etc/apache2
+chown -R root:root /etc/apache
+echo "<Directory />" >> /etc/apache2/apache2.conf
+echo "        AllowOverride None" >> /etc/apache2/apache2.conf
+echo "        Order Deny,Allow" >> /etc/apache2/apache2.conf
+echo "        Deny from all" >> /etc/apache2/apache2.conf
+echo "</Directory>" >> /etc/apache2/apache2.conf
+echo "UserDir disabled root" >> /etc/apache2/apache2.conf
+systemctl restart apache2.service
+
+
+
+
+
 echo "installing some good programs"
 sudo apt-get install -y chkrootkit clamav rkhunter apparmor apparmor-profiles
 
@@ -260,6 +271,6 @@ echo "virus scan"
     rkhunter -c --enable all --disable none
 
     #Lynis
-    cd /usr/share/lynis/
-    /usr/share/lynis/lynis update info
-    /usr/share/lynis/lynis audit system
+    	cd /usr/share/lynis/
+	/usr/share/lynis/lynis update info
+	/usr/share/lynis/lynis audit system
