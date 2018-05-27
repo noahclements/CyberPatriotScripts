@@ -36,11 +36,6 @@ echo "enabling firewall"
 sudo apt-get install ufw
 sudo ufw enable
 
-for((x=1; x<=299; x++))
-do
-	sudo ufw allow out $x
-	echo "port $x"
-done
 
 sudo ufw allow out 443
 ufw deny 23
